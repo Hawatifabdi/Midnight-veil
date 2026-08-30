@@ -15,20 +15,27 @@ const PHI_PATTERNS = [
     replacement: 'Patient [REDACTED_NAME]' 
   },
   // Social Security Numbers
-  { 
+  {
     name: 'SSN', 
     regex: /\b\d{3}-\d{2}-\d{4}\b/g, 
     replacement: '[REDACTED_SSN]' 
   },
-  // Phone numbers (7-digit local, 10-digit, labeled 'Phone: ...', standard US/Intl)
+  // Medical record numbers are checked before phones because a record number
+  // can use a phone-like format such as 123-456-7890.
+  {
+    name: 'MRN',
+    regex: /(?<!\w)(?:MRN|Medical\s+Records?(?:\s+(?:Number|No\.?|#))?|Record\s+(?:Number|No\.?|#)|Patient\s+(?:ID|Identifier)|ID)\s*[:#-]?\s*[A-Z0-9-]{4,20}(?!\w)/gi,
+    replacement: '[REDACTED_MRN]'
+  },
+  // Phone numbers. Labeled values support local and international formats.
   { 
     name: 'PHONE_LABELED',
-    regex: /\b(?:Phone|Tel|Cell|Mobile|Fax)[:#]?\s*(\+?\d[\d\s().-]{6,14}\d)\b/gi,
+    regex: /(?<!\w)(?:Phone|Tel|Telephone|Cell|Mobile|Fax)\s*[:#-]?\s*(\+?\d[\d\s().-]{5,}\d)(?!\w)/gi,
     replacement: 'Phone: [REDACTED_PHONE]'
   },
   { 
     name: 'PHONE_STANDALONE', 
-    regex: /\b(?:\+?1[-. ]?)?(?:\(?\d{3}\)?[-. ]?)?\d{3}[-. ]\d{4}\b/g, 
+    regex: /(?<![\w+])(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]\d{4}(?!\w)/g,
     replacement: '[REDACTED_PHONE]' 
   },
   // Email Addresses
@@ -48,12 +55,6 @@ const PHI_PATTERNS = [
     regex: /\b(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4})\b/gi, 
     replacement: '[REDACTED_DATE]' 
   },
-  // Medical Record Numbers & IDs
-  { 
-    name: 'MRN', 
-    regex: /\b(?:MRN|ID|Patient ID)[:#]?\s*\d{6,10}\b/gi, 
-    replacement: '[REDACTED_ID]' 
-  }
 ];
 
 async function sha256(message: string): Promise<string> {
@@ -79,9 +80,10 @@ export async function scrubMedicalPrompt(rawText: string): Promise<ScrubResult> 
   let residualPhiCount = 0;
   const residualCheckList = [
     /\b\d{3}-\d{2}-\d{4}\b/g,
-    /\b(?:\+?1[-. ]?)?(?:\(?\d{3}\)?[-. ]?)?\d{3}[-. ]\d{4}\b/g,
+    /(?<![\w+])(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]\d{4}(?!\w)/g,
     /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g,
-    /\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/g
+    /\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/g,
+    /(?<!\w)(?:MRN|Medical\s+Records?(?:\s+(?:Number|No\.?|#))?|Record\s+(?:Number|No\.?|#)|Patient\s+(?:ID|Identifier)|ID)\s*[:#-]?\s*[A-Z0-9-]{4,20}(?!\w)/gi
   ];
 
   for (const regex of residualCheckList) {
