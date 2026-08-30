@@ -1,0 +1,28 @@
+# Node dependencies
+node_modules/
+
+# Vite production build
+dist/
+dist-ssr/
+
+# Environment secrets and keys
+.env
+.env.*
+!.env.example
+*.local
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+.npmrc
+*service-account*.json
+firebase-adminsdk-*.json
+
+# Compact compiler build output (large ZK artifacts)
+contracts/build/
+
+# Logs & temp files
+*.log
+.DS_Store

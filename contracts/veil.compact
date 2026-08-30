@@ -1,0 +1,37 @@
+pragma language_version >= 0.19;
+
+import CompactStandardLibrary;
+
+// 1. Define the witness data structure
+export struct AuditWitness {
+    raw_hash: Bytes<32>,
+    clean_hash: Bytes<32>,
+    phi_detected_count: Uint<32>,
+    residual_phi_count: Uint<32>
+}
+
+// 2. Public ledger state (Visible on the Midnight blockchain)
+export ledger session_counter: Counter;
+export ledger latest_session_id: Bytes<32>;
+export ledger compliance_status: Boolean;
+export ledger clean_text_hash: Bytes<32>;
+
+// 3. Private witness definition
+witness get_audit_witness(): AuditWitness;
+
+// 4. Zero-Knowledge Circuit Transition
+export circuit verify_and_log_intake(session_id: Bytes<32>): [] {
+    const witness_data = get_audit_witness();
+
+    // Assert zero residual PHI remaining after local sanitization
+    assert(witness_data.residual_phi_count == 0, "Audit Failed: Residual PHI tokens detected in prompt.");
+
+    // Assert that clean and raw hashes differ if PHI was detected
+    assert(witness_data.clean_hash != witness_data.raw_hash || witness_data.phi_detected_count == 0, "Audit Failed: Sanitization mismatch detected.");
+
+    // Update public ledger state with explicit disclose wrappers
+    latest_session_id = disclose(session_id);
+    clean_text_hash = disclose(witness_data.clean_hash);
+    compliance_status = true;
+    session_counter.increment(1);
+}
