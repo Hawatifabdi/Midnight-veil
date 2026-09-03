@@ -387,4 +387,4 @@ It does not constitute legal advice, medical advice, or a certification of HIPAA
 
 ## License
 
-This project is currently intended as a hackathon prototype. Add your preferred open-source license, such as MIT, before publishing the repository.
+This project is currently intended as a hackathon prototype. Add your preferred open-source license, such as MIT, before publishing the repository
